@@ -2,5 +2,9 @@
   "betterelevatorcontact.frequency": "无线频道 · 频率 %s",
   "betterelevatorcontact.choose": "左键选择物品",
   "betterelevatorcontact.clear": "右键清空；两个槽全空时禁用无线呼叫",
-  "betterelevatorcontact.pick": "选择频率 %s 的物品"
+  "betterelevatorcontact.pick": "选择频率 %s 的物品",
+  "betterelevatorcontact.material": "伪装材质",
+  "betterelevatorcontact.material.choose": "左键选择不透明完整方块",
+  "betterelevatorcontact.material.clear": "右键清空；确认后恢复锚点原外观",
+  "betterelevatorcontact.material.pick": "选择伪装方块"
 }

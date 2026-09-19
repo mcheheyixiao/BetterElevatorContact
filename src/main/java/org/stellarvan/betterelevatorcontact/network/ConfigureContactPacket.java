@@ -8,12 +8,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import org.stellarvan.betterelevatorcontact.content.WirelessElevatorBehaviour;
+import org.stellarvan.betterelevatorcontact.content.CamouflageBehaviour;
+import org.stellarvan.betterelevatorcontact.content.CamouflageMaterial;
 
 import java.util.function.Supplier;
 
 /** Frequency choices: -2 keeps the stored item, -1 clears, 0..35 copies a player inventory slot. */
 public record ConfigureContactPacket(BlockPos pos, String shortName, String longName, int doorMode,
-                                     int firstSlot, int secondSlot) {
+                                     int firstSlot, int secondSlot, int materialSlot) {
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeBlockPos(pos);
         buffer.writeUtf(shortName, 4);
@@ -21,11 +23,12 @@ public record ConfigureContactPacket(BlockPos pos, String shortName, String long
         buffer.writeVarInt(doorMode);
         buffer.writeInt(firstSlot);
         buffer.writeInt(secondSlot);
+        buffer.writeInt(materialSlot);
     }
 
     public static ConfigureContactPacket decode(FriendlyByteBuf buffer) {
         return new ConfigureContactPacket(buffer.readBlockPos(), buffer.readUtf(4), buffer.readUtf(90),
-                buffer.readVarInt(), buffer.readInt(), buffer.readInt());
+                buffer.readVarInt(), buffer.readInt(), buffer.readInt(), buffer.readInt());
     }
 
     public void handle(Supplier<NetworkEvent.Context> supplier) {
@@ -34,7 +37,7 @@ public record ConfigureContactPacket(BlockPos pos, String shortName, String long
         ServerPlayer player = context.getSender();
         if (player == null || player.isSpectator() || !player.mayBuild()
                 || doorMode < 0 || doorMode >= DoorControl.values().length
-                || !validSlot(firstSlot) || !validSlot(secondSlot))
+                || !validSlot(firstSlot) || !validSlot(secondSlot) || !validSlot(materialSlot))
             return;
         var level = player.serverLevel();
         if (!level.hasChunkAt(pos) || !level.mayInteract(player, pos)
@@ -42,10 +45,14 @@ public record ConfigureContactPacket(BlockPos pos, String shortName, String long
                 || !contact.canPlayerUse(player) || contact.columnCoords == null)
             return;
         var wireless = contact.getBehaviour(WirelessElevatorBehaviour.TYPE);
-        if (wireless == null)
+        var camouflage = contact.getBehaviour(CamouflageBehaviour.TYPE);
+        if (wireless == null || camouflage == null)
             return;
         ItemStack first = resolve(player, firstSlot, wireless.frequency(true));
         ItemStack second = resolve(player, secondSlot, wireless.frequency(false));
+        ItemStack material = resolve(player, materialSlot, camouflage.materialItem());
+        if (!material.isEmpty() && !CamouflageMaterial.isValid(material)) return;
+        camouflage.setMaterial(material);
         contact.updateName(shortName, longName);
         contact.doorControls.set(DoorControl.values()[doorMode]);
         wireless.setFrequencies(first, second);

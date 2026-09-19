@@ -5,10 +5,12 @@ import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.stellarvan.betterelevatorcontact.Betterelevatorcontact;
+import java.util.Objects;
 
 public final class ContactNetwork {
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(Betterelevatorcontact.MODID, "main"), () -> "1", "1"::equals, "1"::equals);
+            Objects.requireNonNull(ResourceLocation.tryBuild(Betterelevatorcontact.MODID, "main")),
+            () -> "2", "2"::equals, "2"::equals);
 
     private ContactNetwork() {}
 

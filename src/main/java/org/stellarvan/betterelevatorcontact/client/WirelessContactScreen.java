@@ -16,6 +16,8 @@ import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 import org.stellarvan.betterelevatorcontact.Betterelevatorcontact;
 import org.stellarvan.betterelevatorcontact.content.WirelessElevatorBehaviour;
+import org.stellarvan.betterelevatorcontact.content.CamouflageBehaviour;
+import org.stellarvan.betterelevatorcontact.content.CamouflageMaterial;
 import org.stellarvan.betterelevatorcontact.network.ConfigureContactPacket;
 import org.stellarvan.betterelevatorcontact.network.ContactNetwork;
 
@@ -31,8 +33,8 @@ public final class WirelessContactScreen extends Screen {
             Betterelevatorcontact.MODID, "textures/gui/display_link.png"));
     private final ElevatorContactBlockEntity contact;
     private final ContactLanguage language;
-    private final int[] choices = {-2, -2};
-    private final ItemStack[] previous = {ItemStack.EMPTY, ItemStack.EMPTY};
+    private final int[] choices = {-2, -2, -2};
+    private final ItemStack[] previous = {ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
     private String shortName;
     private String longName;
     private DoorControl doorMode;
@@ -58,6 +60,8 @@ public final class WirelessContactScreen extends Screen {
             previous[0] = wireless.frequency(true);
             previous[1] = wireless.frequency(false);
         }
+        var camouflage = contact.getBehaviour(CamouflageBehaviour.TYPE);
+        if (camouflage != null) previous[2] = camouflage.materialItem();
     }
 
     @Override
@@ -125,19 +129,23 @@ public final class WirelessContactScreen extends Screen {
         renderBackground(graphics);
         graphics.blit(TEXTURE, left, top, 20, 172, 233, 82);
         graphics.drawCenteredString(font, title, left + 112, top + 6, 0x2F3738);
-        GuiGameElement.of(AllBlocks.ELEVATOR_CONTACT.asStack()).<GuiGameElement.GuiRenderBuilder>
-                at(left + 239, top + 26, -200).scale(5).render(graphics);
+        ItemStack preview = frequency(2);
+        GuiGameElement.of(preview.isEmpty() ? AllBlocks.ELEVATOR_CONTACT.asStack() : preview)
+                .<GuiGameElement.GuiRenderBuilder>at(left + 239, top + 26, -200).scale(5).render(graphics);
         graphics.renderItem(AllBlocks.TRAIN_DOOR.asStack(), left + 37, top + 58);
-        for (int i = 0; i < 2; i++) {
-            int x = left + 120 + i * 26;
+        for (int i = 0; i < choices.length; i++) {
+            int x = slotX(i);
             drawSlot(graphics, x, top + 58, selecting == i);
             graphics.renderItem(frequency(i), x + 1, top + 59);
         }
         if (selecting >= 0) renderPicker(graphics, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
-        for (int i = 0; i < 2; i++) {
-            if (insideSlot(mouseX, mouseY, left + 120 + i * 26, top + 58)) {
-                graphics.renderComponentTooltip(font, List.of(
+        for (int i = 0; i < choices.length; i++) {
+            if (insideSlot(mouseX, mouseY, slotX(i), top + 58)) {
+                graphics.renderComponentTooltip(font, i == 2 ? List.of(
+                        language.text("betterelevatorcontact.material"),
+                        language.text("betterelevatorcontact.material.choose"),
+                        language.text("betterelevatorcontact.material.clear")) : List.of(
                         language.text("betterelevatorcontact.frequency", i + 1),
                         language.text("betterelevatorcontact.choose"),
                         language.text("betterelevatorcontact.clear")), mouseX, mouseY);
@@ -148,7 +156,8 @@ public final class WirelessContactScreen extends Screen {
     private void renderPicker(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.fill(left + 20, top + 86, left + 214, top + 190, 0xFFBDBDBD);
         graphics.renderOutline(left + 20, top + 86, 194, 104, 0xFF373737);
-        graphics.drawString(font, language.text("betterelevatorcontact.pick", selecting + 1),
+        graphics.drawString(font, selecting == 2 ? language.text("betterelevatorcontact.material.pick")
+                        : language.text("betterelevatorcontact.pick", selecting + 1),
                 left + 28, top + 91, 0x373737, false);
         if (minecraft == null || minecraft.player == null) return;
         ItemStack hovered = ItemStack.EMPTY;
@@ -157,6 +166,7 @@ public final class WirelessContactScreen extends Screen {
             int y = top + 105 + display / 9 * 18 + (display >= 27 ? 4 : 0);
             int slot = display < 27 ? display + 9 : display - 27;
             ItemStack stack = minecraft.player.getInventory().getItem(slot);
+            if (selecting == 2 && !CamouflageMaterial.isValid(stack)) stack = ItemStack.EMPTY;
             boolean hover = insideSlot(mouseX, mouseY, x, y);
             drawSlot(graphics, x, y, hover);
             graphics.renderItem(stack, x + 1, y + 1);
@@ -173,8 +183,8 @@ public final class WirelessContactScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (int i = 0; i < 2; i++) {
-            if (insideSlot(mouseX, mouseY, left + 120 + i * 26, top + 58)) {
+        for (int i = 0; i < choices.length; i++) {
+            if (insideSlot(mouseX, mouseY, slotX(i), top + 58)) {
                 if (button == 1) {
                     choices[i] = -1;
                     selecting = -1;
@@ -191,7 +201,8 @@ public final class WirelessContactScreen extends Screen {
                 int y = top + 105 + display / 9 * 18 + (display >= 27 ? 4 : 0);
                 if (insideSlot(mouseX, mouseY, x, y)) {
                     int slot = display < 27 ? display + 9 : display - 27;
-                    if (!minecraft.player.getInventory().getItem(slot).isEmpty()) {
+                    ItemStack stack = minecraft.player.getInventory().getItem(slot);
+                    if (!stack.isEmpty() && (selecting != 2 || CamouflageMaterial.isValid(stack))) {
                         choices[selecting] = slot;
                         selecting = -1;
                     }
@@ -200,6 +211,10 @@ public final class WirelessContactScreen extends Screen {
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private int slotX(int index) {
+        return left + (index == 2 ? 173 : 120 + index * 26);
     }
 
     private static boolean insideSlot(double mx, double my, int x, int y) {
@@ -221,7 +236,7 @@ public final class WirelessContactScreen extends Screen {
 
     private void confirm() {
         ContactNetwork.CHANNEL.sendToServer(new ConfigureContactPacket(contact.getBlockPos(), shortName, longName,
-                doorMode.ordinal(), choices[0], choices[1]));
+                doorMode.ordinal(), choices[0], choices[1], choices[2]));
         onClose();
     }
 

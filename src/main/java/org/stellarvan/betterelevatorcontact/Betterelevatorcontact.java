@@ -7,6 +7,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import org.stellarvan.betterelevatorcontact.content.WirelessElevatorBehaviour;
+import org.stellarvan.betterelevatorcontact.content.CamouflageBehaviour;
 import org.stellarvan.betterelevatorcontact.network.ContactNetwork;
 
 @Mod(Betterelevatorcontact.MODID)
@@ -24,5 +25,6 @@ public class Betterelevatorcontact {
 
     private static void attachWirelessReceiver(BlockEntityBehaviourEvent<ElevatorContactBlockEntity> event) {
         event.attach(new WirelessElevatorBehaviour(event.getBlockEntity()));
+        event.attach(new CamouflageBehaviour(event.getBlockEntity()));
     }
 }
