@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.stellarvan.betterelevatorcontact.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "betterelevatorcontact.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+    "ElevatorContactBlockMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
