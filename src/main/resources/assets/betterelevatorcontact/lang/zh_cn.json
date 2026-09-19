@@ -1,6 +1,6 @@
 {
   "betterelevatorcontact.frequency": "无线频道 · 频率 %s",
-  "betterelevatorcontact.choose": "左键选择物品（不消耗）",
+  "betterelevatorcontact.choose": "左键选择物品",
   "betterelevatorcontact.clear": "右键清空；两个槽全空时禁用无线呼叫",
   "betterelevatorcontact.pick": "选择频率 %s 的物品"
 }
